@@ -42,7 +42,9 @@ def write_events_to_file(sorted_unique_events):
     output_file = open(EVENTS_FILE, "w")
 
     for event in sorted_unique_events:
-        line = event.event_date.strftime('%Y-%m-%d') + ',' + event.summary.title() + '\n'
+        # for CSV, use this format
+        # line = event.event_date.strftime('%Y-%m-%d') + ',' + event.summary.title() + '\n'
+        line = event.event_date.strftime('%Y-%m-%d') + ' ' + event.summary.title() + '\n'
         output_file.write(line)
 
     output_file.close()
@@ -186,6 +188,9 @@ def main(argv):
     parser.add_argument('-g', action='store_true', default=False,
                         dest='generate_file_only',
                         help='Generate file only')
+    parser.add_argument('-c', action='store_true', default=False,
+                        dest='list_categories_only',
+                        help='List Categories only')
 
     results = parser.parse_args()
 
@@ -193,21 +198,43 @@ def main(argv):
         print('Generating file only...')
         sorted_unique_events = generate_events_file()
         print('File %s generated!' % EVENTS_FILE)
+        
         sys.exit()
+
 
     access_token = get_access_token()
     smugmug = SmugMugOAuth.smugmugOauthUseAccessToken(access_token)
-
-    #
+    
     # KEEP THIS CODE - Use it to discover folder key values
-    #
-    # categories = smugmug.categories_get(NickName=access_token['User']['NickName'])
-    # for category in categories["Categories"]:
-    #     print("%s, %s, %s" % (category["id"], category['Name'], category["NiceName"]))
+    if results.list_categories_only:
+        categories = smugmug.categories_get(NickName=access_token['User']['NickName'])
+        for category in categories["Categories"]:
+            print("%s, %s, %s %s" % (category["id"], category['Name'], category["NiceName"], category["Type"]))
+
+        print('\n\n')
+
+        albumList = smugmug.albums_get(NickName=access_token['User']['NickName'])
+        for a in albumList["Albums"]:
+            print("%s, %s, %s, %s" % (a["id"], a['Key'], a['Title'], a["Category"]))
+
+        print('\n\n')
+
+        subCategories = smugmug.subcategories_get(NickName=access_token['User']['NickName'], CategoryID='5130127797')
+        for sc in subCategories["SubCategories"]:
+            print("%s, %s, %s" % (sc["id"], sc['Name'], sc['NiceName']))
+
+        print('\n\n')
+        
+        sys.exit()
 
     upload_key = 'vipers'
-    football_game_category_id = '11924665524'   # Insert real VHS BAND Ids here
-    event_category_id = '5530913789'            # and here
+    
+    #20172018 folder : 5130127797
+
+    football_game_category_id = '2529037676'   # Insert real VHS BAND Ids here
+    event_category_id = '3020055839'           # and here
+    miscellaneous_category_id = '10534569397'  # 
+
     title_list = []
 
     # If the file exists use that otherwise reconstruct list from local list
@@ -242,10 +269,10 @@ def main(argv):
                                       UploadKey=upload_key)
 
         print("Key: %s, Title: %s" % (album['Album']['Key'], title))
-        print("URL: https://naderaskari.smugmug.com/upload/%s/%s" % (album['Album']['Key'], upload_key))
+        print("URL: https://vhsband.smugmug.com/upload/%s/%s" % (album['Album']['Key'], upload_key))
 
         upload_url_file.write(title)
-        upload_url_file.write(upload_key + '\n')
+        upload_url_file.write('https://vhsband.com/audio-images/add-photos/' + upload_key + '\n')
 
     # Done writing to output file, close it up.
     upload_url_file.close()
